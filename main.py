@@ -21,37 +21,37 @@ clock = pygame.time.Clock()
 
 class Player():
     def __init__(self, player_key_type, color):
-        self.__height = 200
-        self.__width = 12
-        self.__color = color
-        self.__x_offset = 10
-        self.__pkt = player_key_type
-        self.__y_vel = 5
+        self._height = 200
+        self._width = 12
+        self._color = color
+        self._x_offset = 10
+        self._pkt = player_key_type
+        self._y_vel = 20
 
         if(player_key_type == PlayerKeyType["WASD"]):
             ## rect is all the way to the left
-            self.__rect = pygame.Rect(self.__x_offset, 
-                                    (SCREEN_HEIGHT // 2)  - (self.__height // 2),
-                                    self.__width,
-                                    self.__height
+            self._rect = pygame.Rect(self._x_offset, 
+                                    (SCREEN_HEIGHT // 2)  - (self._height // 2),
+                                    self._width,
+                                    self._height
                                     )
         else:
             ## rect is all the way to the right
-            self.__rect = pygame.Rect(SCREEN_WIDTH - self.__width - self.__x_offset, 
-                                    (SCREEN_HEIGHT // 2)  - (self.__height // 2),
-                                    self.__width,
-                                    self.__height
+            self._rect = pygame.Rect(SCREEN_WIDTH - self._width - self._x_offset, 
+                                    (SCREEN_HEIGHT // 2)  - (self._height // 2),
+                                    self._width,
+                                    self._height
                                     )
 
     def move_player_up(self):
-        self.__rect.top -= self.__y_vel
-        if(self.__rect.top < 0):
-            self.__rect.top = 0
+        self._rect.top -= self._y_vel
+        if(self._rect.top < 0):
+            self._rect.top = 0
 
     def move_player_down(self):
-        self.__rect.top += self.__y_vel
-        if(self.__rect.bottom > SCREEN_HEIGHT):
-            self.__rect.bottom = SCREEN_HEIGHT
+        self._rect.top += self._y_vel
+        if(self._rect.bottom > SCREEN_HEIGHT):
+            self._rect.bottom = SCREEN_HEIGHT
 
     def handle_wasd_click(self, keys):
         if(keys[pygame.K_w]):
@@ -68,47 +68,82 @@ class Player():
     def player_input(self):
         keys = pygame.key.get_pressed()
 
-        if(self.__pkt == PlayerKeyType["WASD"]):
+        if(self._pkt == PlayerKeyType["WASD"]):
             self.handle_wasd_click(keys)
         else:
             self.handle_arrows_click(keys)
-
+    
     def draw(self):
-        pygame.draw.rect(screen, self.__color, self.__rect)
+        pygame.draw.rect(screen, self._color, self._rect)
 
     def update(self):
         self.player_input()
 
 class Ball():
     def __init__(self):
-        self.__width = 20
-        self.__height = 20
-        self.__rect = pygame.Rect((SCREEN_WIDTH // 2) - (self.__width // 2),
-                                  (SCREEN_HEIGHT // 2) - (self.__height // 2),
-                                    self.__width,
-                                    self.__height
+        self._width = 14
+        self._height = 14
+        self._rect = pygame.Rect((SCREEN_WIDTH // 2) - (self._width // 2),
+                                  (SCREEN_HEIGHT // 2) - (self._height // 2),
+                                    self._width,
+                                    self._height
                                 )
-        self.__y_vel = 10
-        self.__x_vel = 10
+        self._y_vel = -4
+        self._x_vel = -6
+
+    ## ball movement methods
 
     def move_y(self):
-        self.__rect.top += self.__y_vel
+        self._rect.top += self._y_vel
 
     def move_x(self):
-         self.__rect.left += self.__y_vel
+         self._rect.left += self._x_vel
 
     def move_ball(self):
         self.move_y()
         self.move_x()
 
+    ########################
+
+    ## collision methods
+
+    def check_wall_collision(self):
+        pass
+    
+    def check_player_collision(self):
+        if(self._rect.colliderect(player1._rect) or 
+           self._rect.colliderect(player2._rect)):
+            return True
+        return False
+    
+    def check_collision(self, player1, player2):
+        self.handle_wall_collision()
+
+        if(self.check_player_collision()):
+            self.handle_player_collision()
+
+    def handle_wall_collision(self):
+        ## top and bottom wall collision
+        if(self._rect.top <= 0 or self._rect.bottom >= SCREEN_HEIGHT):
+            self._y_vel *= -1
+
+    def handle_player_collision(self):
+        self._x_vel *= -1
+    
+    ########################
+
     def draw(self):
-        pygame.draw.rect(screen, "White", self.__rect)
+        pygame.draw.rect(screen, "White", self._rect)
     
     def update(self):
         self.move_ball()
 
 player1 = Player(PlayerKeyType["WASD"], "Blue")
 player2 = Player(PlayerKeyType["ARROWS"], "Red")
+ball = Ball()
+
+def check_collisions():
+    ball.check_collision(player1, player2)
 
 ## GAME LOOP
 while True:
@@ -116,12 +151,19 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
+
     screen.fill("black")
+    
+    check_collisions()
+
+    ball.draw()
     player1.draw()
     player2.draw()
 
+    ball.update()
     player1.update()
     player2.update()
+    
 
     pygame.display.update()
     clock.tick(60)
