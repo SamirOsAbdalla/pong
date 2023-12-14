@@ -22,11 +22,11 @@ clock = pygame.time.Clock()
 class Player():
     def __init__(self, player_key_type, color):
         self._height = 200
-        self._width = 12
+        self._width = 15
         self._color = color
         self._x_offset = 10
         self._pkt = player_key_type
-        self._y_vel = 20
+        self._y_vel = 15
 
         if(player_key_type == PlayerKeyType["WASD"]):
             ## rect is all the way to the left
@@ -88,8 +88,8 @@ class Ball():
                                     self._width,
                                     self._height
                                 )
-        self._y_vel = -4
-        self._x_vel = -6
+        self._y_vel = 4
+        self._x_vel = -5
 
     ## ball movement methods
 
@@ -110,25 +110,43 @@ class Ball():
     def check_wall_collision(self):
         pass
     
-    def check_player_collision(self):
-        if(self._rect.colliderect(player1._rect) or 
-           self._rect.colliderect(player2._rect)):
-            return True
-        return False
+    def check_player_collision(self, player1,player2):
+        if(self._rect.colliderect(player1._rect)):
+            return "player1"
+        elif(self._rect.colliderect(player2._rect)):
+            return "player2"
+        return None
     
     def check_collision(self, player1, player2):
         self.handle_wall_collision()
 
-        if(self.check_player_collision()):
-            self.handle_player_collision()
+        collision_res = self.check_player_collision(player1,player2)
+        if(collision_res == "player1"):
+            self.handle_player_collision(player1)
+        elif(collision_res == "player2"):
+            self.handle_player_collision(player2)
+        
 
     def handle_wall_collision(self):
         ## top and bottom wall collision
-        if(self._rect.top <= 0 or self._rect.bottom >= SCREEN_HEIGHT):
+        if(self._rect.top <= 0):
+            self._rect.top = 0
+            self._y_vel *= -1
+        elif (self._rect.bottom > SCREEN_HEIGHT):
+            self._rect.bottom = SCREEN_HEIGHT-1
             self._y_vel *= -1
 
-    def handle_player_collision(self):
-        self._x_vel *= -1
+    def handle_player_collision(self, player):
+        if(abs(self._rect.right - player._rect.right) <= self._width
+           and self._x_vel < 0):
+            self._x_vel *= -1.5
+        elif(abs(self._rect.left - player._rect.left) <= self._width
+           and self._x_vel > 0):
+            self._x_vel *= -1.5
+        elif(abs(self._rect.bottom - player._rect.top) < self._height and self._y_vel > 0):
+            self._y_vel *= -1
+        elif(abs(self._rect.top- player._rect.bottom) < self._height and self._y_vel < 0):
+            self._y_vel *= -1
     
     ########################
 
@@ -153,7 +171,7 @@ while True:
             exit()
 
     screen.fill("black")
-    
+
     check_collisions()
 
     ball.draw()
@@ -164,6 +182,5 @@ while True:
     player1.update()
     player2.update()
     
-
     pygame.display.update()
     clock.tick(60)
