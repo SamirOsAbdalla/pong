@@ -6,6 +6,11 @@ from enum import Enum
 ## HELPER VARIABLES
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 800
+loading_round = False
+start_ticks = 0
+end_ticks = 0
+
+player_speed = 15
 class PlayerKeyType(Enum):
     WASD = 0
     ARROWS = 1
@@ -18,7 +23,7 @@ pygame.display.set_caption("Pong")
 clock = pygame.time.Clock()
 #######
 
-
+    
 class Player():
     def __init__(self, player_key_type, color):
         self._height = 200
@@ -26,7 +31,7 @@ class Player():
         self._color = color
         self._x_offset = 10
         self._pkt = player_key_type
-        self._y_vel = 15
+        self._y_vel = player_speed
 
         if(player_key_type == PlayerKeyType["WASD"]):
             ## rect is all the way to the left
@@ -90,7 +95,7 @@ class Ball():
                                 )
         self._y_vel = 4
         self._x_vel = -5
-
+        self._speed_multiplier = 1.08
     ## ball movement methods
 
     def move_y(self):
@@ -136,13 +141,18 @@ class Ball():
             self._rect.bottom = SCREEN_HEIGHT-1
             self._y_vel *= -1
 
+
+        ## left and right wall collision
+        if(self._rect.right < 0 or self._rect.left > SCREEN_WIDTH):
+            reset_game()
+
     def handle_player_collision(self, player):
         if(abs(self._rect.right - player._rect.right) <= self._width
            and self._x_vel < 0):
-            self._x_vel *= -1.5
+            self._x_vel *= -self._speed_multiplier
         elif(abs(self._rect.left - player._rect.left) <= self._width
            and self._x_vel > 0):
-            self._x_vel *= -1.5
+            self._x_vel *= -self._speed_multiplier
         elif(abs(self._rect.bottom - player._rect.top) < self._height and self._y_vel > 0):
             self._y_vel *= -1
         elif(abs(self._rect.top- player._rect.bottom) < self._height and self._y_vel < 0):
@@ -160,6 +170,30 @@ player1 = Player(PlayerKeyType["WASD"], "Blue")
 player2 = Player(PlayerKeyType["ARROWS"], "Red")
 ball = Ball()
 
+def reset_game():
+    global start_ticks
+    global end_ticks
+    global loading_round
+    start_ticks = pygame.time.get_ticks()
+    end_ticks = start_ticks + 3000
+
+    ball._y_vel = 0
+    ball._x_vel = 0
+    ball._rect.left = (SCREEN_WIDTH // 2) - (ball._width // 2)
+    ball._rect.top =  (SCREEN_HEIGHT // 2) - (ball._height // 2)
+
+
+    player1._y_vel = 0
+    player2._y_vel = 0
+
+    player1._rect.left = player1._x_offset
+    player1._rect.top = (SCREEN_HEIGHT // 2)  - (player1._height // 2)
+
+    player2._rect.left =  SCREEN_WIDTH - player2._width - player2._x_offset
+    player2._rect.top = (SCREEN_HEIGHT // 2)  - (player2._height // 2)                       
+    loading_round = True
+                                 
+
 def check_collisions():
     ball.check_collision(player1, player2)
 
@@ -171,9 +205,21 @@ while True:
             exit()
 
     screen.fill("black")
+    if(not loading_round):
+        check_collisions()
+    else:
+        print(start_ticks)
+        if(start_ticks >= end_ticks):
+            loading_round = False
+            ball._x_vel = -5
+            ball._y_vel = -2
 
-    check_collisions()
+            player1._y_vel = player_speed
+            player2._y_vel = player_speed
+        else:
+            start_ticks = pygame.time.get_ticks()
 
+    pygame.draw.line(screen, "White", (SCREEN_WIDTH // 2, 0), (SCREEN_WIDTH//2, SCREEN_HEIGHT))
     ball.draw()
     player1.draw()
     player2.draw()
@@ -181,6 +227,5 @@ while True:
     ball.update()
     player1.update()
     player2.update()
-    
     pygame.display.update()
     clock.tick(60)
