@@ -1,29 +1,37 @@
 import pygame
 from sys import exit
 from enum import Enum
-
+from random import randint
+## INIT
+pygame.init()
+pygame.display.set_caption("Pong")
+clock = pygame.time.Clock()
+#######
 
 ## HELPER VARIABLES
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 800
-loading_round = False
+loading_round = True
+loading_time = 3000
+
 start_ticks = 0
 end_ticks = 0
 
 player_speed = 15
+score_font = pygame.font.Font(None, 50)
+countdown_font = pygame.font.Font(None, 100)
+
+player1_score = 0
+player2_score = 0
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
 class PlayerKeyType(Enum):
     WASD = 0
     ARROWS = 1
 ####################
 
-## INIT
-pygame.init()
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Pong")
-clock = pygame.time.Clock()
-#######
 
-    
+
 class Player():
     def __init__(self, player_key_type, color):
         self._height = 200
@@ -93,8 +101,8 @@ class Ball():
                                     self._width,
                                     self._height
                                 )
-        self._y_vel = 4
-        self._x_vel = -5
+        self._y_vel = randint(-8, 8)
+        self._x_vel = randint(-20, 20)
         self._speed_multiplier = 1.08
     ## ball movement methods
 
@@ -144,6 +152,12 @@ class Ball():
 
         ## left and right wall collision
         if(self._rect.right < 0 or self._rect.left > SCREEN_WIDTH):
+            global player1_score
+            global player2_score
+            if(self._rect.right < 0):
+                player2_score += 1
+            else:
+                player1_score += 1
             reset_game()
 
     def handle_player_collision(self, player):
@@ -170,12 +184,17 @@ player1 = Player(PlayerKeyType["WASD"], "Blue")
 player2 = Player(PlayerKeyType["ARROWS"], "Red")
 ball = Ball()
 
+def display_score():
+    font_surf = score_font.render(f"{player1_score}       {player2_score}", False, (255, 255, 255))
+    font_rect = font_surf.get_rect(center = (SCREEN_WIDTH//2, SCREEN_HEIGHT//2))
+    screen.blit(font_surf, font_rect)
+
 def reset_game():
     global start_ticks
     global end_ticks
     global loading_round
     start_ticks = pygame.time.get_ticks()
-    end_ticks = start_ticks + 3000
+    end_ticks = start_ticks + loading_time
 
     ball._y_vel = 0
     ball._x_vel = 0
@@ -192,11 +211,17 @@ def reset_game():
     player2._rect.left =  SCREEN_WIDTH - player2._width - player2._x_offset
     player2._rect.top = (SCREEN_HEIGHT // 2)  - (player2._height // 2)                       
     loading_round = True
-                                 
+
+def display_countdown():                            
+    display_int = ((end_ticks - start_ticks) // 1000) + 1
+    countdown_surf = countdown_font.render(f"{display_int}", True, (255,255,255))
+    countdown_rect = countdown_surf.get_rect(center = (SCREEN_WIDTH//2, 100))
+    screen.blit(countdown_surf, countdown_rect)
 
 def check_collisions():
     ball.check_collision(player1, player2)
 
+reset_game()
 ## GAME LOOP
 while True:
     for event in pygame.event.get():
@@ -206,20 +231,21 @@ while True:
 
     screen.fill("black")
     if(not loading_round):
+        pygame.draw.line(screen, "White", (SCREEN_WIDTH // 2, 0), (SCREEN_WIDTH//2, SCREEN_HEIGHT))
         check_collisions()
     else:
-        print(start_ticks)
+        display_score()
+        display_countdown()
         if(start_ticks >= end_ticks):
             loading_round = False
-            ball._x_vel = -5
-            ball._y_vel = -2
+            ball._x_vel = randint(-20,20)
+            ball._y_vel = randint(-8, 8)
 
             player1._y_vel = player_speed
             player2._y_vel = player_speed
         else:
             start_ticks = pygame.time.get_ticks()
-
-    pygame.draw.line(screen, "White", (SCREEN_WIDTH // 2, 0), (SCREEN_WIDTH//2, SCREEN_HEIGHT))
+    
     ball.draw()
     player1.draw()
     player2.draw()
